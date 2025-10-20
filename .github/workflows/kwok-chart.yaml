@@ -45,10 +45,11 @@ jobs:
           TMP="$(mktemp -d)"
           cp -a "$SRC/." "$TMP/"
 
-          # Resolve symlinked CRDs by copying actual files
-          if [[ -d "$ROOT/kwok/apis/crds" ]]; then
+          # Resolve specific CRD symlink by replacing it with the real file
+          if [[ -f "$ROOT/kwok/apis/crds/karpenter.kwok.sh_kwoknodeclasses.yaml" ]]; then
             mkdir -p "$TMP/crds"
-            cp -a "$ROOT/kwok/apis/crds/." "$TMP/crds/"
+            rm -f "$TMP/crds/karpenter.kwok.sh_kwoknodeclasses.yaml"
+            cp "$ROOT/kwok/apis/crds/karpenter.kwok.sh_kwoknodeclasses.yaml" "$TMP/crds/karpenter.kwok.sh_kwoknodeclasses.yaml"
           fi
 
           # Override chart name only for packaging
