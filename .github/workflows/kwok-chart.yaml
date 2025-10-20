@@ -52,9 +52,6 @@ jobs:
             cp "$ROOT/kwok/apis/crds/karpenter.kwok.sh_kwoknodeclasses.yaml" "$TMP/crds/karpenter.kwok.sh_kwoknodeclasses.yaml"
           fi
 
-          # Override chart name only for packaging (must be lowercase for GHCR)
-          yq -i '.name = "karpenter-kwok"' "$TMP/Chart.yaml"
-
           # Versioning: tags => semver; main => 0.0.0-sha.<shortsha> (valid semver)
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             V="${GITHUB_REF_NAME#v}"
