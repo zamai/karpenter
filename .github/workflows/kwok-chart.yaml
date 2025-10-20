@@ -28,8 +28,6 @@ jobs:
 
       - name: Install yq
         uses: mikefarah/yq@master
-        with:
-          cmd: version
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -41,9 +39,32 @@ jobs:
       - name: Package chart
         id: pkg
         run: |
-          bash tools/release/package-kwok-chart.sh > artefact.txt
-          PKG=$(tail -n1 artefact.txt)
-          echo "pkg=$PKG" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          ROOT="$(pwd)"
+          SRC="$ROOT/kwok/charts"
+          TMP="$(mktemp -d)"
+          cp -a "$SRC/." "$TMP/"
+
+          # Resolve symlinked CRDs by copying actual files
+          if [[ -d "$ROOT/kwok/apis/crds" ]]; then
+            mkdir -p "$TMP/crds"
+            cp -a "$ROOT/kwok/apis/crds/." "$TMP/crds/"
+          fi
+
+          # Override chart name only for packaging
+          yq -i '.name = "karPENTER-kwok"' "$TMP/Chart.yaml"
+
+          # Versioning: tags => semver; main => short SHA
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            V="${GITHUB_REF_NAME#v}"
+            APP="$V"
+          else
+            V="${GITHUB_SHA::7}"
+            APP="$V"
+          fi
+
+          helm package "$TMP" --version "$V" --app-version "$APP" --destination "$TMP" >/dev/null
+          echo "pkg=$TMP/karPENTER-kwok-$V.tgz" >> "$GITHUB_OUTPUT"
 
       - name: Push to GHCR (OCI)
         run: |
