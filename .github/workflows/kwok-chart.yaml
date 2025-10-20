@@ -55,13 +55,13 @@ jobs:
           # Override chart name only for packaging
           yq -i '.name = "karPENTER-kwok"' "$TMP/Chart.yaml"
 
-          # Versioning: tags => semver; main => short SHA
+          # Versioning: tags => semver; main => 0.0.0-sha.<shortsha> (valid semver)
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             V="${GITHUB_REF_NAME#v}"
             APP="$V"
           else
-            V="${GITHUB_SHA::7}"
-            APP="$V"
+            V="0.0.0-sha.${GITHUB_SHA::7}"
+            APP="${GITHUB_SHA::7}"
           fi
 
           helm package "$TMP" --version "$V" --app-version "$APP" --destination "$TMP" >/dev/null
