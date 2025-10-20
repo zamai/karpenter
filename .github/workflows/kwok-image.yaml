@@ -39,24 +39,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Compute tags
-        id: tags
-        shell: bash
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "tags=${GITHUB_REF_NAME},latest" >> "$GITHUB_OUTPUT"
-          else
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
-            echo "tags=latest,${LAST_TAG}+${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Publish image
         run: |
-          IFS=',' read -ra TAG_ARR <<< "${{ steps.tags.outputs.tags }}"
-          EXTRA_TAGS=""
-          for t in "${TAG_ARR[@]}"; do
-            EXTRA_TAGS+=" -t ${t}"
-          done
-          KO_DOCKER_REPO="ghcr.io/${{ github.repository }}/karpenter-kwok" ko publish ./kwok --bare ${EXTRA_TAGS}
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${GITHUB_SHA::7}"
+          fi
+          KO_DOCKER_REPO="ghcr.io/${{ github.repository }}/karpenter-kwok" ko publish ./kwok --bare -t "$TAG"
 
 
