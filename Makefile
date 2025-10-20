@@ -1,5 +1,5 @@
 # This is the format of an AWS ECR Public Repo as an example.
-export KWOK_REPO ?= ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+export KWOK_REPO=kind.local
 export KARPENTER_NAMESPACE=kube-system
 
 HELM_OPTS ?= --set logLevel=debug \
@@ -25,12 +25,21 @@ build-with-kind: # build with kind assumes the image will be uploaded directly o
 	$(eval CONTROLLER_IMG=$(shell $(WITH_GOFLAGS) KO_DOCKER_REPO="$(KWOK_REPO)" ko build sigs.k8s.io/karpenter/kwok))
 	$(eval IMG_REPOSITORY=$(shell echo $(CONTROLLER_IMG) | cut -d ":" -f 1))
 	$(eval IMG_TAG=latest)
+	@echo "Build-with-kind completed:"
+	@echo "  CONTROLLER_IMG=$(CONTROLLER_IMG)"
+	@echo "  IMG_REPOSITORY=$(IMG_REPOSITORY)"
+	@echo "  IMG_TAG=$(IMG_TAG)"
 
 build: ## Build the Karpenter KWOK controller images using ko build
 	$(eval CONTROLLER_IMG=$(shell $(WITH_GOFLAGS) KO_DOCKER_REPO="$(KWOK_REPO)" ko build -B sigs.k8s.io/karpenter/kwok))
 	$(eval IMG_REPOSITORY=$(shell echo $(CONTROLLER_IMG) | cut -d "@" -f 1 | cut -d ":" -f 1))
 	$(eval IMG_TAG=$(shell echo $(CONTROLLER_IMG) | cut -d "@" -f 1 | cut -d ":" -f 2 -s))
 	$(eval IMG_DIGEST=$(shell echo $(CONTROLLER_IMG) | cut -d "@" -f 2))
+	@echo "Build completed:"
+	@echo "  CONTROLLER_IMG=$(CONTROLLER_IMG)"
+	@echo "  IMG_REPOSITORY=$(IMG_REPOSITORY)"
+	@echo "  IMG_TAG=$(IMG_TAG)"
+	@echo "  IMG_DIGEST=$(IMG_DIGEST)"
 
 apply-with-kind: verify build-with-kind ## Deploy the kwok controller from the current state of your git repository into your ~/.kube/config cluster
 	kubectl apply -f kwok/charts/crds
@@ -38,7 +47,7 @@ apply-with-kind: verify build-with-kind ## Deploy the kwok controller from the c
 		$(HELM_OPTS) \
 		--set controller.image.repository=$(IMG_REPOSITORY) \
 		--set controller.image.tag=$(IMG_TAG) \
-		--set serviceMonitor.enabled=true \
+		--set serviceMonitor.enabled=false \
 		--set-string controller.env[0].name=ENABLE_PROFILING \
 		--set-string controller.env[0].value=true
 

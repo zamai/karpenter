@@ -1,0 +1,52 @@
+name: Publish Karpenter KWOK Helm Chart
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kwok/charts/**'
+      - 'tools/release/package-kwok-chart.sh'
+  tags:
+    - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install yq
+        uses: mikefarah/yq@v4.44.3
+        with:
+          cmd: version
+
+      - name: Log in to GHCR for Helm (OCI)
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$CR_PAT" | helm registry login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Package chart
+        id: pkg
+        run: |
+          bash tools/release/package-kwok-chart.sh > artefact.txt
+          PKG=$(tail -n1 artefact.txt)
+          echo "pkg=$PKG" >> "$GITHUB_OUTPUT"
+
+      - name: Push to GHCR (OCI)
+        env:
+          OCI_REPO: oci://ghcr.io/${{ github.repository }}/charts
+        run: |
+          helm push "${{ steps.pkg.outputs.pkg }}" "$OCI_REPO"
+
+

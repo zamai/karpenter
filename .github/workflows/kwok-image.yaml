@@ -1,0 +1,62 @@
+name: Publish Karpenter KWOK Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kwok/**'
+      - 'go.mod'
+      - 'go.sum'
+  tags:
+    - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up ko
+        uses: imjasonh/setup-ko@v0.6
+
+      - name: Log in to GHCR
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$CR_PAT" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Compute tags
+        id: tags
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "tags=${GITHUB_REF_NAME},latest" >> "$GITHUB_OUTPUT"
+          else
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
+            echo "tags=latest,${LAST_TAG}+${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish image
+        env:
+          KO_DOCKER_REPO: ghcr.io/${{ github.repository }}/karpenter-kwok
+        run: |
+          IFS=',' read -ra TAG_ARR <<< "${{ steps.tags.outputs.tags }}"
+          EXTRA_TAGS=""
+          for t in "${TAG_ARR[@]}"; do
+            EXTRA_TAGS+=" -t ${t}"
+          done
+          ko publish sigs.k8s.io/karpenter/kwok --bare ${EXTRA_TAGS}
+
+

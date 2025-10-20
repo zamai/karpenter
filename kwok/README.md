@@ -8,17 +8,57 @@ Before using the kwok provider, make sure that you don't have an installed versi
 - Have a cluster that you can install Karpenter on to.
   - For an example on how to make a cluster in AWS, refer to [karpenter.sh](https://karpenter.sh/docs/getting-started/getting-started-with-karpenter/)
 
-If you use a kind cluster, please set the the following environment variables:
-```bash
-export KWOK_REPO=kind.local
-export KIND_CLUSTER_NAME=<kind cluster name, for example, chart-testing>
-```
 
-## Installing
+## Installation
+
+### For Real Clusters
+
+EKS, GKE, etc.
+
 ```bash
 make install-kwok
 make apply # Run this command again to redeploy if the code has changed
 ```
+
+### For Kind Clusters
+
+1. **Install required tools**:
+   ```bash
+   # installs kwok + kwokctl
+   brew install kind kwok 
+   ```
+
+2. **Create a Kind cluster**:
+   ```bash
+   kind create cluster --name karpenter-kwok
+   kubectl cluster-info --context kind-karpenter-kwok
+   ```
+
+3. **Set up environment variables**:
+   ```bash
+   export KWOK_REPO=kind.local
+   export KIND_CLUSTER_NAME=karpenter-kwok
+   ```
+
+4. **Install KWOK provider**:
+   ```bash
+   make install-kwok
+   ```
+
+5. **Install Prometheus (required for ServiceMonitor)**:
+   ```bash
+   ./hack/install-prometheus.sh
+   ```
+
+6. **Deploy Karpenter**:
+   ```bash
+   make apply-with-kind
+   ```
+
+   To redeploy after code changes:
+   ```bash
+   make apply-with-kind
+   ```
 
 ## Create a NodePool
 
@@ -88,6 +128,16 @@ make e2etests
 ```
 
 ## Notes
+
+### ServiceMonitor Support
+
+For Kind clusters, ServiceMonitor functionality requires Prometheus Operator to be installed. The `make apply-with-kind` target disables ServiceMonitor by default to avoid dependency issues. If you need ServiceMonitor functionality for monitoring Karpenter metrics:
+
+1. Install Prometheus Operator: `./hack/install-prometheus.sh`
+2. The ServiceMonitor will automatically be enabled for monitoring Karpenter metrics
+
+### Provider-Specific Labels
+
 The kwok provider will have additional labels `karpenter.kwok.sh/instance-type`, `karpenter.kwok.sh/instance-size`,
 `karpenter.kwok.sh/instance-family`, `karpenter.kwok.sh/instance-cpu`, and `karpenter.sh/instance-memory`. These are
 only available in the kwok provider to select fake generated instance types. These labels will not work with a real

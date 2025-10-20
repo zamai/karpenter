@@ -6,6 +6,25 @@
 [![Coverage Status](https://coveralls.io/repos/github/aws/karpenter-core/badge.svg?branch=main)](https://coveralls.io/github/aws/karpenter-core?branch=main)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/aws/karpenter-core/issues)
 
+## Publishing KWOK Image & Helm Chart
+
+CI publishes on pushes to `main` and tags `v*`:
+
+- Image (ko): `ghcr.io/<owner>/<repo>/karpenter-kwok` with tags:
+  - main: `latest`, `<last-tag>+<shortsha>`
+  - tags: `<semver>`, `latest`
+- Helm Chart (OCI): `oci://ghcr.io/<owner>/<repo>/charts` as `karPENTER-kwok` with versions:
+  - main: `<last-tag>+<shortsha>` (appVersion `<last-tag>`)
+  - tags: `<semver>` (appVersion `<semver>`)
+
+Required permissions for the workflows:
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+```
+
 # Karpenter
 
 Karpenter improves the efficiency and cost of running workloads on Kubernetes clusters by:
