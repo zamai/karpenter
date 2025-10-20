@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'kwok/charts/**'
-      - 'tools/release/package-kwok-chart.sh'
+#    paths:
+#      - 'kwok/charts/**'
+#      - 'tools/release/package-kwok-chart.sh'
     tags:
       - 'v*'
 

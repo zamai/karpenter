@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'kwok/**'
-      - 'go.mod'
-      - 'go.sum'
+#    paths:
+#      - 'kwok/**'
+#      - 'go.mod'
+#      - 'go.sum'
     tags:
       - 'v*'
 
