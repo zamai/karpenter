@@ -64,6 +64,7 @@ make apply # Run this command again to redeploy if the code has changed
 
 Once kwok is installed and Karpenter successfully applies to the cluster, you should now be able to create a NodePool.
 
+
 ```bash
 cat <<EOF | envsubst | kubectl apply -f -
 apiVersion: karpenter.sh/v1
