@@ -54,7 +54,9 @@ jobs:
           # get chart version from Chart.yaml
           V=$(yq -r '.version' "$TMP/Chart.yaml")
 
-          helm package "$TMP" --destination "$TMP" >/dev/null
+          helm package "$TMP" --version "$V" --destination "$TMP" >/dev/null
+          echo "Files in destination:"
+          ls -la "$TMP"/*.tgz || echo "No .tgz files found"
           echo "pkg=$TMP/karpenter-kwok-$V.tgz" >> "$GITHUB_OUTPUT"
 
       - name: Push to GHCR (OCI)
