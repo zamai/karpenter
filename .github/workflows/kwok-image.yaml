@@ -8,15 +8,15 @@ on:
       - 'kwok/**'
       - 'go.mod'
       - 'go.sum'
-  tags:
-    - 'v*'
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  publish:
+  publish-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,10 +32,12 @@ jobs:
       - name: Set up ko
         uses: imjasonh/setup-ko@v0.6
 
-      - name: Log in to GHCR
-        env:
-          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "$CR_PAT" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compute tags
         id: tags
@@ -49,14 +51,12 @@ jobs:
           fi
 
       - name: Publish image
-        env:
-          KO_DOCKER_REPO: ghcr.io/${{ github.repository }}/karpenter-kwok
         run: |
           IFS=',' read -ra TAG_ARR <<< "${{ steps.tags.outputs.tags }}"
           EXTRA_TAGS=""
           for t in "${TAG_ARR[@]}"; do
             EXTRA_TAGS+=" -t ${t}"
           done
-          ko publish sigs.k8s.io/karpenter/kwok --bare ${EXTRA_TAGS}
+          KO_DOCKER_REPO="ghcr.io/${{ github.repository }}/karpenter-kwok" ko publish ./kwok --bare ${EXTRA_TAGS}
 
 
