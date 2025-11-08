@@ -43,8 +43,6 @@ jobs:
           gh release upload "$TAG" karpenter.intoto.json
 
   publish-kwok-image:
-    env:
-      TAG: ${{ github.ref_name }}
     permissions:
       contents: read
       packages: write
@@ -69,14 +67,12 @@ jobs:
           registry: https://ghcr.io
           username: ${{ github.actor }}
           password: "${{ secrets.GITHUB_TOKEN }}"
-
       - name: Publish KWOK image
         run: |
-          KO_DOCKER_REPO="ghcr.io/${{ github.repository }}/karpenter-kwok" ko publish ./kwok --bare -t "$TAG"
+          VERSION="${GITHUB_REF_NAME#v}"          
+          KO_DOCKER_REPO="ghcr.io/${{ github.repository }}/karpenter-kwok" ko publish ./kwok --bare -t "$VERSION"
 
   publish-kwok-chart:
-    env:
-      TAG: ${{ github.ref_name }}
     permissions:
       contents: read
       packages: write
@@ -108,11 +104,12 @@ jobs:
             rm -f "$SRC/crds/karpenter.kwok.sh_kwoknodeclasses.yaml"
             cp "${{ github.workspace }}/kwok/apis/crds/karpenter.kwok.sh_kwoknodeclasses.yaml" "$SRC/crds/karpenter.kwok.sh_kwoknodeclasses.yaml"
           fi
-
+          VERSION="${GITHUB_REF_NAME#v}"
           # Use the release tag as the chart version
-          helm package "$SRC" --version "$TAG"
-          echo "saved chart to path: ${{ github.workspace }}/karpenter-kwok-$TAG.tgz"
+          helm package "$SRC" --version "$VERSION"
+          echo "saved chart to path: ${{ github.workspace }}/karpenter-kwok-$VERSION.tgz"
 
       - name: Push KWOK chart to GHCR (OCI)
         run: |
-          helm push "${{ github.workspace }}/karpenter-kwok-$TAG.tgz" "oci://ghcr.io/${{ github.repository }}/charts"
+          VERSION="${GITHUB_REF_NAME#v}"
+          helm push "${{ github.workspace }}/karpenter-kwok-$VERSION.tgz" "oci://ghcr.io/${{ github.repository }}/charts"
